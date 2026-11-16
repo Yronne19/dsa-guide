@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { font-family: 'DM Sans', sans-serif; color: #172033; background: #f5f7fb; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+.code-font { font-family: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace; }
+.dark body { background: #0b1220; color: #e5eaf4; }
+.dark .surface { background: #121c2d; border-color: #26344a; color: #e5eaf4; }
+.dark .muted { color: #9aa9c0; }
+.dark .soft-bg { background: #18263a; }
+.dark .nav-item { color: #aab7ca; }
+.dark .nav-item.active { background: #1e3353; color: #9fc0ff; }
+.dark .border-soft { border-color: #26344a; }
+.dark input { background: #172337; border-color: #30415a; color: #edf2fb; }
+.dark .code-panel { background: #080e19; }
