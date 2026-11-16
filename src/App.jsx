@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import './data/legacy-data.js';
 import { BookOpen, BrainCircuit, Check, ChevronDown, ChevronRight, CircleHelp, Code2, Command, Compass, GraduationCap, Layers3, Lightbulb, ListChecks, Menu, Moon, Play, Search, Sparkles, Sun, Trophy, X, RotateCcw, ArrowLeft, ArrowRight, Terminal, Clock3, Target, PanelLeftClose } from 'lucide-react';
 
 const { topics: TOPICS = {}, quizzes: QUIZZES = {} } = window.DSA_GUIDE || {};
