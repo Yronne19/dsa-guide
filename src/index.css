@@ -16,3 +16,23 @@ button, input { font: inherit; }
 .dark .border-soft { border-color: #26344a; }
 .dark input { background: #172337; border-color: #30415a; color: #edf2fb; }
 .dark .code-panel { background: #080e19; }
+
+/* ---------- Algorithm debugger animations ---------- */
+@keyframes algoFocusA { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-8px) scale(1.09); } 100% { transform: translateY(0) scale(1); } }
+@keyframes algoFocusB { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-8px) scale(1.09); } 100% { transform: translateY(0) scale(1); } }
+@keyframes algoSwapA { 0% { transform: scale(1) rotate(0deg); } 30% { transform: scale(1.15) rotate(-4deg); } 65% { transform: scale(1.15) rotate(4deg); } 100% { transform: scale(1) rotate(0deg); } }
+@keyframes algoSwapB { 0% { transform: scale(1) rotate(0deg); } 30% { transform: scale(1.15) rotate(-4deg); } 65% { transform: scale(1.15) rotate(4deg); } 100% { transform: scale(1) rotate(0deg); } }
+@keyframes algoFoundA { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1.06); } }
+@keyframes algoFoundB { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1.06); } }
+@keyframes algoLogIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+.algo-focus-a { animation: algoFocusA 0.55s ease; }
+.algo-focus-b { animation: algoFocusB 0.55s ease; }
+.algo-swap-a { animation: algoSwapA 0.55s ease; }
+.algo-swap-b { animation: algoSwapB 0.55s ease; }
+.algo-found-a { animation: algoFoundA 0.6s ease forwards; }
+.algo-found-b { animation: algoFoundB 0.6s ease forwards; }
+.algo-log-row { animation: algoLogIn 0.25s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .algo-focus-a, .algo-focus-b, .algo-swap-a, .algo-swap-b,
+  .algo-found-a, .algo-found-b, .algo-log-row { animation: none; }
+}

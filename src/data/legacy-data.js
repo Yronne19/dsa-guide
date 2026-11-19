@@ -83,10 +83,10 @@ for (int i = 0; i < ids.length; i++) {
 }`},
 code:["int[] a = {7, 3, 9, 4, 1}; // our list","for (int i = 0; i < a.length; i++) { // go through each item","  if (a[i] == target) {   // is this the one?","    return i;             // yes! return position","  }","}","return -1;  // not found"],
 gen(a,t){const r=[];let found=false;
-for(let i=0;i<a.length;i++){r.push(S([0],`i = ${i}. Move to position ${i}.`,a,{hi:[i],vars:`i = ${i}, target = ${t}`}));
-const m=a[i]==t;r.push(S([2],`Is a[${i}] (${a[i]}) equal to ${t}? ${m?"YES":"No"}.`,a,{hi:[i],vars:`i = ${i}, a[i] = ${a[i]}, target = ${t}`}));
-if(m){r.push(S([3],`Found ${t} at index ${i}. return ${i}. Done!`,a,{done:[i],vars:`result = ${i}`}));found=true;break}}
-if(!found)r.push(S([6],`We checked every item. ${t} is not in the list, so return -1.`,a,{vars:"result = -1"}));return r}},
+for(let i=0;i<a.length;i++){r.push(S([0],`i = ${i}. Move to position ${i}.`,a,{hi:[i],vars:`i = ${i}, target = ${t}`,k:"visit",ptr:{i}}));
+const m=a[i]==t;r.push(S([2],`Is a[${i}] (${a[i]}) equal to ${t}? ${m?"YES":"No"}.`,a,{hi:[i],vars:`i = ${i}, a[i] = ${a[i]}, target = ${t}`,k:"compare",cmp:m?"eq":"ne",ptr:{i}}));
+if(m){r.push(S([3],`Found ${t} at index ${i}. return ${i}. Done!`,a,{done:[i],vars:`result = ${i}`,k:"found",ptr:{i}}));found=true;break}}
+if(!found)r.push(S([6],`We checked every item. ${t} is not in the list, so return -1.`,a,{vars:"result = -1",k:"miss"}));return r}},
 
 binary:{group:"Algorithms",name:"Binary Search",simple:"Binary search is a smart guessing game. Look at the MIDDLE item of a sorted list. If your target is smaller, throw away the right half. If bigger, throw away the left half. Repeat until found.",
 how:["The list MUST be sorted.","Pick the middle item.","If it equals the target, you are done.","If the target is bigger, search the right half. If smaller, search the left half.","Each step cuts the list in half."],
@@ -102,13 +102,13 @@ while (low <= high) {
 }`},
 code:["int low = 0, high = a.length - 1; // search range","while (low <= high) {   // while range is not empty","  int mid = (low + high) / 2;  // middle position","  if (a[mid] == target) return mid; // found it","  else if (a[mid] < target) low = mid + 1; // go right","  else high = mid - 1;       // go left","}","return -1;  // not found"],
 gen(a,t){const r=[];let lo=0,hi=a.length-1;const R=()=>[lo,hi];
-r.push(S([0],`Start with the full list. low = ${lo}, high = ${hi}.`,a,{rng:R(),vars:`low = ${lo}, high = ${hi}`}));
-while(lo<=hi){r.push(S([1],`low (${lo}) <= high (${hi}), so there is still something to search.`,a,{rng:R(),vars:`low = ${lo}, high = ${hi}`}));
-const mid=Math.floor((lo+hi)/2);r.push(S([2],`mid = (${lo} + ${hi}) / 2 = ${mid}. Look at a[${mid}] = ${a[mid]}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}, mid = ${mid}`}));
-if(a[mid]==t){r.push(S([3],`a[${mid}] = ${a[mid]} equals ${t}. Found at index ${mid}!`,a,{done:[mid],vars:`result = ${mid}`}));return r}
-if(a[mid]<t){lo=mid+1;r.push(S([4],`${a[mid]} < ${t}, so the target is on the RIGHT. low = ${lo}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}`}))}
-else{hi=mid-1;r.push(S([5],`${a[mid]} > ${t}, so the target is on the LEFT. high = ${hi}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}`}))}}
-r.push(S([7],`low is bigger than high, so the range is empty. ${t} is not here. return -1.`,a,{rng:[1,0],vars:"result = -1"}));return r}},
+r.push(S([0],`Start with the full list. low = ${lo}, high = ${hi}.`,a,{rng:R(),vars:`low = ${lo}, high = ${hi}`,k:"init",ptr:{low:lo,high:hi}}));
+while(lo<=hi){r.push(S([1],`low (${lo}) <= high (${hi}), so there is still something to search.`,a,{rng:R(),vars:`low = ${lo}, high = ${hi}`,k:"range",ptr:{low:lo,high:hi}}));
+const mid=Math.floor((lo+hi)/2);r.push(S([2],`mid = (${lo} + ${hi}) / 2 = ${mid}. Look at a[${mid}] = ${a[mid]}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}, mid = ${mid}`,k:"compare",cmp:a[mid]===t?"eq":a[mid]<t?"lt":"gt",ptr:{low:lo,high:hi,mid}}));
+if(a[mid]==t){r.push(S([3],`a[${mid}] = ${a[mid]} equals ${t}. Found at index ${mid}!`,a,{done:[mid],vars:`result = ${mid}`,k:"found",ptr:{low:lo,high:hi,mid}}));return r}
+if(a[mid]<t){lo=mid+1;r.push(S([4],`${a[mid]} < ${t}, so the target is on the RIGHT. low = ${lo}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}`,k:"narrow",cmp:"lt",ptr:{low:lo,high:hi,mid}}))}
+else{hi=mid-1;r.push(S([5],`${a[mid]} > ${t}, so the target is on the LEFT. high = ${hi}.`,a,{rng:R(),hi:[mid],vars:`low = ${lo}, high = ${hi}`,k:"narrow",cmp:"gt",ptr:{low:lo,high:hi,mid}}))}}
+r.push(S([7],`low is bigger than high, so the range is empty. ${t} is not here. return -1.`,a,{rng:[1,0],vars:"result = -1",k:"miss"}));return r}},
 
 bubble:{group:"Algorithms",name:"Bubble Sort",simple:"Bubble sort compares two neighbors at a time and swaps them if they are in the wrong order. The biggest values slowly “bubble” to the end, like bubbles rising in water.",
 how:["Compare the first two neighbors.","If the left one is bigger, swap them.","Move one step right and repeat until the end of the list.","After each full pass, the biggest unsorted value is in its final place.","Repeat passes until everything is sorted."],
@@ -125,12 +125,12 @@ for (int i = 0; i < scores.length - 1; i++) {
 }`},
 code:["int[] a = {5, 3, 8, 1, 4}; // unsorted list","for (int i = 0; i < a.length - 1; i++) { // each pass","  for (int j = 0; j < a.length - 1 - i; j++) { // neighbors","    if (a[j] > a[j + 1]) { // wrong order?","      int t = a[j];     // keep left value","      a[j] = a[j + 1];  // move right value left","      a[j + 1] = t;     // put left value right","    }","  }","}"],
 gen(a){a=a.slice();const r=[];const n=a.length;const done=[];
-r.push(S([0],"Start with the unsorted list.",a,{vars:"i = -, j = -"}));
+r.push(S([0],"Start with the unsorted list.",a,{vars:"i = -, j = -",k:"start"}));
 for(let i=0;i<n-1;i++){for(let j=0;j<n-1-i;j++){const v=`i = ${i}, j = ${j}`;
-r.push(S([2,3],`Compare a[${j}] (${a[j]}) and a[${j+1}] (${a[j+1]}). Is ${a[j]} > ${a[j+1]}? ${a[j]>a[j+1]?"YES, swap them":"No, leave them"}.`,a,{hi:[j,j+1],done:done.slice(),vars:v}));
-if(a[j]>a[j+1]){const x=a[j];a[j]=a[j+1];a[j+1]=x;r.push(S([4,5,6],`Swapped! The list is now [${a.join(", ")}].`,a,{hi:[j,j+1],done:done.slice(),vars:v}))}}
-done.push(n-1-i);r.push(S([8],`Pass ${i+1} finished. ${a[n-1-i]} is now in its final place.`,a,{done:done.slice(),vars:`i = ${i}`}))}
-done.push(0);r.push(S([9],`All passes are done. Sorted list: [${a.join(", ")}].`,a,{done:a.map((_,k)=>k),vars:"sorted = true"}));return r}}
+r.push(S([2,3],`Compare a[${j}] (${a[j]}) and a[${j+1}] (${a[j+1]}). Is ${a[j]} > ${a[j+1]}? ${a[j]>a[j+1]?"YES, swap them":"No, leave them"}.`,a,{hi:[j,j+1],done:done.slice(),vars:v,k:"compare",cmp:a[j]>a[j+1]?"gt":"lt",ptr:{i,j}}));
+if(a[j]>a[j+1]){const x=a[j];a[j]=a[j+1];a[j+1]=x;r.push(S([4,5,6],`Swapped! The list is now [${a.join(", ")}].`,a,{hi:[j,j+1],done:done.slice(),vars:v,k:"swap",ptr:{i,j}}))}}
+done.push(n-1-i);r.push(S([8],`Pass ${i+1} finished. ${a[n-1-i]} is now in its final place.`,a,{done:done.slice(),vars:`i = ${i}`,k:"pass",ptr:{i}}))}
+done.push(0);r.push(S([9],`All passes are done. Sorted list: [${a.join(", ")}].`,a,{done:a.map((_,k)=>k),vars:"sorted = true",k:"done"}));return r}}
 };
 
 // ---------- Added beginner sorting algorithms ----------
@@ -152,18 +152,18 @@ insertion: {
   code:["int[] a = {7, 3, 8, 2, 6}; // values to sort","for (int i = 1; i < a.length; i++) { // sorted prefix starts at index 0","  int key = a[i]; // value we want to insert","  int j = i - 1; // begin at the right edge of sorted prefix","  while (j >= 0 && a[j] > key) { // larger value belongs after key","    a[j + 1] = a[j]; // shift larger value one position right","    j--; // compare the next value to the left","  }","  a[j + 1] = key; // place key into the gap","}"],
   gen(a){
     a=a.slice(); const r=[]; const n=a.length;
-    r.push(S([0],"Start: only the first element is considered sorted. The remaining elements are waiting to be inserted.",a,{done:[0],vars:"i = 1"}));
+    r.push(S([0],"Start: only the first element is considered sorted. The remaining elements are waiting to be inserted.",a,{done:[0],vars:"i = 1",k:"start",ptr:{i:0}}));
     for(let i=1;i<n;i++){
       const key=a[i]; let j=i-1;
-      r.push(S([1,2],`Choose key = ${key} at index ${i}. The sorted prefix is [${a.slice(0,i).join(", ")}].`,a,{hi:[i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, key = ${key}, j = ${j}`}));
+      r.push(S([1,2],`Choose key = ${key} at index ${i}. The sorted prefix is [${a.slice(0,i).join(", ")}].`,a,{hi:[i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, key = ${key}, j = ${j}`,k:"key",ptr:{i,key,j}}));
       while(j>=0){
-        r.push(S([3],`Compare a[${j}] = ${a[j]} with key ${key}. ${a[j]>key?`${a[j]} is larger, so it must shift right.`:`${a[j]} is not larger, so shifting stops.`}`,a,{hi:[j,i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, key = ${key}, j = ${j}`}));
-        if(a[j]>key){a[j+1]=a[j];r.push(S([4,5],`Shift ${a[j]} one position right into index ${j+1}.`,a,{hi:[j+1],done:Array.from({length:i},(_,k)=>k),vars:`key = ${key}, j = ${j-1}`}));j--;}else break;
+        r.push(S([3],`Compare a[${j}] = ${a[j]} with key ${key}. ${a[j]>key?`${a[j]} is larger, so it must shift right.`:`${a[j]} is not larger, so shifting stops.`}`,a,{hi:[j,i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, key = ${key}, j = ${j}`,k:"compare",cmp:a[j]>key?"gt":"lt",ptr:{i,key,j}}));
+        if(a[j]>key){a[j+1]=a[j];r.push(S([4,5],`Shift ${a[j]} one position right into index ${j+1}.`,a,{hi:[j+1],done:Array.from({length:i},(_,k)=>k),vars:`key = ${key}, j = ${j-1}`,k:"shift",ptr:{i,key,j:j-1}}));j--;}else break;
       }
       a[j+1]=key;
-      r.push(S([8],`Insert key ${key} at index ${j+1}. The sorted prefix is now [${a.slice(0,i+1).join(", ")}].`,a,{hi:[j+1],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, key = ${key}, inserted at ${j+1}`}));
+      r.push(S([8],`Insert key ${key} at index ${j+1}. The sorted prefix is now [${a.slice(0,i+1).join(", ")}].`,a,{hi:[j+1],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, key = ${key}, inserted at ${j+1}`,k:"insert",ptr:{i,key,j:j+1}}));
     }
-    r.push(S([9],`Finished! The array is sorted: [${a.join(", ")}].`,a,{done:a.map((_,i)=>i),vars:"sorted = true"}));
+    r.push(S([9],`Finished! The array is sorted: [${a.join(", ")}].`,a,{done:a.map((_,i)=>i),vars:"sorted = true",k:"done"}));
     return r;
   }
 },
@@ -184,23 +184,23 @@ selection: {
   code:["int[] a = {6, 3, 8, 2, 7, 1}; // values to sort","for (int i = 0; i < a.length - 1; i++) { // first unsorted position","  int minIndex = i; // assume current value is smallest","  for (int j = i + 1; j < a.length; j++) { // scan remaining values","    if (a[j] < a[minIndex]) { // found a smaller value?","      minIndex = j; // remember its index","    }","  }","  int temp = a[i]; // save current first unsorted value","  a[i] = a[minIndex]; // move minimum into its final position","  a[minIndex] = temp; // put saved value where minimum was","}"],
   gen(a){
     a=a.slice(); const r=[]; const n=a.length;
-    r.push(S([0],"Start: the entire array is unsorted. The algorithm will place one minimum value at a time.",a,{vars:"i = 0"}));
+    r.push(S([0],"Start: the entire array is unsorted. The algorithm will place one minimum value at a time.",a,{vars:"i = 0",k:"start",ptr:{i:0}}));
     for(let i=0;i<n-1;i++){
       let minIndex=i;
-      r.push(S([1,2],`Begin pass ${i+1}. Assume a[${i}] = ${a[i]} is the minimum.`,a,{hi:[i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`}));
+      r.push(S([1,2],`Begin pass ${i+1}. Assume a[${i}] = ${a[i]} is the minimum.`,a,{hi:[i],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`,k:"pass",ptr:{i,minIndex}}));
       for(let j=i+1;j<n;j++){
         const smaller=a[j]<a[minIndex];
-        r.push(S([3,4,5],`Compare a[${j}] = ${a[j]} with current minimum a[${minIndex}] = ${a[minIndex]}. ${smaller?`${a[j]} is smaller, so update minIndex to ${j}.`:`${a[j]} is not smaller; keep minIndex = ${minIndex}.`}`,a,{hi:[j,minIndex],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, j = ${j}, minIndex = ${minIndex}`}));
+        r.push(S([3,4,5],`Compare a[${j}] = ${a[j]} with current minimum a[${minIndex}] = ${a[minIndex]}. ${smaller?`${a[j]} is smaller, so update minIndex to ${j}.`:`${a[j]} is not smaller; keep minIndex = ${minIndex}.`}`,a,{hi:[j,minIndex],done:Array.from({length:i},(_,k)=>k),vars:`i = ${i}, j = ${j}, minIndex = ${minIndex}`,k:"compare",cmp:smaller?"lt":"gt",ptr:{i,j,minIndex}}));
         if(smaller) minIndex=j;
       }
       if(minIndex!==i){
         const temp=a[i];a[i]=a[minIndex];a[minIndex]=temp;
-        r.push(S([8,9,10],`Swap a[${i}] and a[${minIndex}]. The minimum ${a[i]} is now fixed at index ${i}.`,a,{hi:[i,minIndex],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`}));
+        r.push(S([8,9,10],`Swap a[${i}] and a[${minIndex}]. The minimum ${a[i]} is now fixed at index ${i}.`,a,{hi:[i,minIndex],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`,k:"swap",ptr:{i,minIndex}}));
       } else {
-        r.push(S([8,9,10],`The minimum is already at index ${i}; no swap is needed. This position is now fixed.`,a,{hi:[i],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`}));
+        r.push(S([8,9,10],`The minimum is already at index ${i}; no swap is needed. This position is now fixed.`,a,{hi:[i],done:Array.from({length:i+1},(_,k)=>k),vars:`i = ${i}, minIndex = ${minIndex}`,k:"keep",ptr:{i,minIndex}}));
       }
     }
-    r.push(S([11],`Finished! The array is sorted: [${a.join(", ")}].`,a,{done:a.map((_,i)=>i),vars:"sorted = true"}));
+    r.push(S([11],`Finished! The array is sorted: [${a.join(", ")}].`,a,{done:a.map((_,i)=>i),vars:"sorted = true",k:"done"}));
     return r;
   }
 }

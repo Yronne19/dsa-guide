@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './data/legacy-data.js';
-import { BookOpen, BrainCircuit, Check, ChevronDown, ChevronRight, CircleHelp, Code2, Command, Compass, GraduationCap, Layers3, Lightbulb, ListChecks, Menu, Moon, Play, Search, Sparkles, Sun, Trophy, X, RotateCcw, ArrowLeft, ArrowRight, Terminal, Clock3, Target, PanelLeftClose } from 'lucide-react';
+import { BookOpen, BrainCircuit, Check, ChevronDown, ChevronRight, CircleHelp, Code2, Command, Compass, GraduationCap, Layers3, Lightbulb, ListChecks, Menu, Moon, Play, Search, Sparkles, Sun, Trophy, X, RotateCcw, ArrowLeft, ArrowRight, Terminal, Clock3, Target, PanelLeftClose, Pause, SkipBack, SkipForward } from 'lucide-react';
 
 const { topics: TOPICS = {}, quizzes: QUIZZES = {} } = window.DSA_GUIDE || {};
 const GROUP_ORDER = ['Getting Started', 'Data Structures', 'Java Collections', 'Algorithms', 'Advanced Systems'];
@@ -776,6 +776,152 @@ function ExamplePanel({topic:t,topicKey}) {
     </div>
   </div>;
 }
+const ALGO_POINTER_TONE = {
+  i: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
+  j: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
+  mid: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
+  low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+  high: 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200',
+  minIndex: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/20 dark:text-fuchsia-200'
+};
+const ALGO_BADGE = {
+  init: ['Starting point', 'slate'], start: ['Starting point', 'slate'], visit: ['Inspecting index', 'blue'],
+  compare: ['Comparing values', 'blue'], swap: ['Swapping cells', 'amber'], shift: ['Shifting right', 'amber'],
+  insert: ['Inserting key', 'violet'], key: ['Holding key', 'violet'], narrow: ['Half discarded', 'sky'],
+  range: ['Searching this range', 'sky'], pass: ['Pass finished', 'emerald'], keep: ['No swap needed', 'emerald'],
+  found: ['Target found', 'emerald'], miss: ['Target not found', 'rose'], done: ['Array sorted', 'emerald']
+};
+const ALGO_TONE = {
+  slate: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  blue: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-500/10 dark:text-blue-300',
+  sky: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-500/10 dark:text-sky-300',
+  amber: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300',
+  violet: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-500/10 dark:text-violet-300',
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-500/10 dark:text-emerald-300',
+  rose: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-300'
+};
+function AlgorithmTracker({topic:t, topicKey}) {
+  const search = topicKey === 'linear' || topicKey === 'binary';
+  const [values, setValues] = useState(t.inp?.arr || '7,3,9,4,1');
+  const [targetText, setTargetText] = useState(String(t.inp?.target ?? '4'));
+  const [steps, setSteps] = useState([]);
+  const [pos, setPos] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [error, setError] = useState('');
+  const logBox = useRef(null);
+
+  const build = (rawValues = values, rawTarget = targetText) => {
+    try {
+      const list = String(rawValues).split(',').map(x => x.trim()).filter(x => x !== '').map(Number);
+      if (!list.length) throw new Error('Enter at least one number.');
+      if (list.length > 12) throw new Error('Use at most 12 numbers so the animation stays readable.');
+      if (list.some(Number.isNaN)) throw new Error('Use numbers separated by commas, for example 7,3,9,4,1.');
+      if (search && String(rawTarget).trim() === '') throw new Error('Enter a numeric target value.');
+      if (search && Number.isNaN(Number(rawTarget))) throw new Error('The target must be a number.');
+      if (topicKey === 'binary') list.sort((a,b) => a - b);
+      const trace = t.gen?.(list, Number(rawTarget)) || [];
+      if (!trace.length) throw new Error('This lesson has no recorded trace.');
+      setSteps(trace); setPos(0); setPlaying(false); setError('');
+    } catch (e) {
+      setSteps([]); setPlaying(false); setError(e.message || 'Unable to build the trace.');
+    }
+  };
+
+  useEffect(() => { build(t.inp?.arr || '', String(t.inp?.target ?? '')); }, [topicKey]);
+
+  const last = steps.length - 1;
+  useEffect(() => {
+    if (!playing) return;
+    if (pos >= last) { setPlaying(false); return; }
+    const id = setTimeout(() => setPos(p => Math.min(p + 1, last)), 1000 / speed);
+    return () => clearTimeout(id);
+  }, [playing, pos, speed, last]);
+
+  const active = steps[pos];
+  useEffect(() => {
+    const node = logBox.current?.querySelector('[data-current="true"]');
+    if (node) node.scrollIntoView({ block: 'nearest' });
+  }, [pos, steps.length]);
+
+  const move = dir => { setPlaying(false); setPos(p => Math.min(Math.max(p + dir, 0), Math.max(last, 0))); };
+  const resetInputs = () => { const a = t.inp?.arr || '7,3,9,4,1'; const b = String(t.inp?.target ?? '4'); setValues(a); setTargetText(b); build(a, b); };
+  const tone = i => {
+    const done = active?.done?.includes(i);
+    const hot = active?.hi?.includes(i);
+    if (active?.k === 'found' && done) return 'border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/30';
+    if (done) return 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200';
+    if (hot) return 'border-blue-500 bg-blue-100 text-blue-900 shadow-lg shadow-blue-500/20 dark:border-blue-500 dark:bg-blue-500/25 dark:text-blue-50';
+    return 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200';
+  };
+  const anim = i => {
+    const flip = pos % 2 ? 'a' : 'b';
+    if (active?.k === 'swap' && active?.hi?.includes(i)) return `algo-swap-${flip}`;
+    if (active?.k === 'found' && active?.done?.includes(i)) return `algo-found-${flip}`;
+    if (active?.hi?.includes(i)) return `algo-focus-${flip}`;
+    return '';
+  };
+  const pointers = i => {
+    const p = active?.ptr;
+    if (!p) return [];
+    return Object.entries(p).filter(([name, idx]) => name !== 'key' && idx === i && ALGO_POINTER_TONE[name]).map(([name]) => name);
+  };
+  const badge = ALGO_BADGE[active?.k] || ['Executing line', 'slate'];
+
+  return <div className="space-y-5">
+    <Card>
+      <SectionTitle eyebrow="Watch the algorithm" title="Live debugger" description="Generate a trace, then play it back. Each step replays one decision the algorithm makes: compare, swap, discard, insert."/>
+      <div className="flex flex-wrap items-end gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/70">
+        <label className="min-w-[190px] flex-1 text-xs font-semibold text-slate-600 dark:text-slate-300">Input values<input value={values} onChange={e=>setValues(e.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900"/></label>
+        {search&&<label className="w-28 text-xs font-semibold text-slate-600 dark:text-slate-300">Target<input value={targetText} onChange={e=>setTargetText(e.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900"/></label>}
+        <button onClick={()=>build()} className="rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">Generate trace</button>
+        <button onClick={resetInputs} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">Lesson defaults</button>
+      </div>
+      {error&&<div className="mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</div>}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button aria-label="Restart trace" onClick={()=>{setPlaying(false);setPos(0);}} disabled={!steps.length} className="rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><RotateCcw size={14}/></button>
+        <button aria-label="Previous step" onClick={()=>move(-1)} disabled={!steps.length||pos===0} className="rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><SkipBack size={14}/></button>
+        <button onClick={()=>{ if(!steps.length) return; if(pos>=last) setPos(0); setPlaying(p=>!p); }} disabled={!steps.length} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-40">{playing?<Pause size={15}/>:<Play size={15}/>} {playing?'Pause':'Play trace'}</button>
+        <button aria-label="Next step" onClick={()=>move(1)} disabled={!steps.length||pos>=last} className="rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><SkipForward size={14}/></button>
+        <button onClick={()=>setSpeed(s=>s===1?2:s===2?0.5:1)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" title="Playback speed">{speed}×</button>
+        <span className="ml-auto rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">Step {steps.length?pos+1:0} of {steps.length}</span>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300" style={{width:`${steps.length?((pos+1)/steps.length)*100:0}%`}}/></div>
+      {active?<div className="mt-5 grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ALGO_TONE[badge[1]]}`}><span className={`h-1.5 w-1.5 rounded-full ${playing?'animate-pulse':''} bg-current`}/>{badge[0]}</span>
+            {search&&<span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">target = {targetText}</span>}
+            {active.ptr?.key!=null&&<span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-900 dark:bg-violet-500/10 dark:text-violet-300">held key = {active.ptr.key}</span>}
+          </div>
+          <div className="mt-4 flex items-end gap-1.5 overflow-x-auto pb-1">
+            {active.items.map((v,i)=><div key={i} className="flex shrink-0 flex-col items-center gap-1">
+              <div className="flex h-4 items-center gap-0.5">{pointers(i).map(name=><span key={name} className={`code-font rounded px-1 text-[9px] font-bold leading-4 ${ALGO_POINTER_TONE[name]}`}>{name}</span>)}</div>
+              <div className={`${anim(i)} flex h-14 w-14 items-center justify-center rounded-xl border-2 font-['Space_Grotesk'] text-lg font-bold shadow-sm transition-all duration-300 ${tone(i)} ${active.rng&&(i<active.rng[0]||i>active.rng[1])?'opacity-25 grayscale':''}`}>{v}</div>
+              <div className="code-font text-[10px] font-semibold text-slate-400">{i}</div>
+            </div>)}
+          </div>
+          <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/80 p-3 dark:border-blue-900 dark:bg-blue-500/10">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">Debugger says</div>
+            <p className="mt-1 text-sm leading-6 text-blue-950 dark:text-blue-100">{active.log}</p>
+          </div>
+          {active.vars&&<div className="mt-3 flex flex-wrap gap-1.5">{String(active.vars).split(',').map((v,i)=><span key={i} className="code-font rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{v.trim()}</span>)}</div>}
+        </div>
+        <div className="overflow-hidden rounded-2xl bg-[#0b1220] ring-1 ring-white/10">
+          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2.5"><span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-300"><Terminal size={12} className="text-emerald-400"/> Execution log</span><span className="text-[10px] text-slate-500">{pos+1}/{steps.length}</span></div>
+          <div ref={logBox} className="max-h-[300px] space-y-0.5 overflow-y-auto p-2">{steps.map((s,i)=>{
+            const current = i===pos, future = i>pos;
+            return <button key={i} data-current={current} onClick={()=>{setPlaying(false);setPos(i);}} className={`algo-log-row flex w-full gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] leading-5 transition ${current?'bg-blue-500/15 text-blue-100 ring-1 ring-inset ring-blue-400/40':future?'text-slate-500 hover:bg-white/5':'text-slate-300 hover:bg-white/5'}`}>
+              <span className={`w-5 shrink-0 text-right font-bold ${current?'text-blue-300':'text-slate-600'}`}>{i+1}</span>
+              <span className="min-w-0 flex-1">{s.log}</span>
+            </button>;
+          })}</div>
+        </div>
+      </div>:<p className="mt-5 rounded-xl border border-dashed border-slate-300 p-5 text-center text-xs text-slate-400 dark:border-slate-700">Enter numbers and press Generate trace to start the debugger.</p>}
+    </Card>
+    {t.code&&<Card><SectionTitle eyebrow="Source code" title="Java implementation" description="The animated marker follows the exact line the debugger is executing."/><div className="code-panel overflow-hidden rounded-xl bg-[#0b1220] p-4">{t.code.map((line,i)=>{const on=active?.lines?.includes(i);return <div key={i} className={`code-font relative flex gap-3 rounded px-2 py-1 text-[11px] leading-5 transition-colors duration-300 ${on?'bg-blue-500/20 text-blue-100':'text-slate-400'}`}><span className={`absolute left-0 top-1/2 -translate-y-1/2 text-[8px] transition-opacity ${on?'text-emerald-400 opacity-100':'opacity-0'}`}>▶</span><span className="w-5 shrink-0 select-none pl-2 text-right text-slate-600">{i+1}</span><code className="whitespace-pre">{line}</code></div>;})}</div></Card>}
+  </div>;
+}
 function TrackerPanel({topic:t,topicKey}) { const [steps,setSteps]=useState([]); const [pos,setPos]=useState(0); const [arr,setArr]=useState(t.inp?.arr||'7,3,9,4,1'); const [target,setTarget]=useState(t.inp?.target||'4'); const [error,setError]=useState(''); const [systemState,setSystemState]=useState(null);
   const isAlgo=['linear','binary','bubble'].includes(topicKey);
   const makeSteps=()=>{try{let values=arr.split(',').map(x=>Number(x.trim())).filter((_,i)=>arr.split(',')[i]?.trim()!=='');if(!values.length||values.length>10||values.some(Number.isNaN))throw new Error('Enter 1–10 comma-separated numbers.');if(isAlgo&&topicKey!=='bubble'&&target.trim()==='')throw new Error('Enter a numeric target.');if(topicKey==='binary'||t.inp?.sort)values.sort((a,b)=>a-b);const nextSteps=t.gen?.(values,Number(target))||t.gen?.()||[];if(!nextSteps.length)throw new Error('This lesson does not have a line-by-line tracker. Use the interactive collection sandbox below.');setSteps(nextSteps);setPos(0);setError('');}catch(e){setError(e.message||'Unable to build the visualization.');}};
@@ -783,6 +929,7 @@ function TrackerPanel({topic:t,topicKey}) { const [steps,setSteps]=useState([]);
   const active=steps[pos];
   if(t.adv) return <AdvancedTracker topic={t}/>;
   if(topicKey === 'arraylist') return <InventoryTracker/>;
+  if(t.group === 'Algorithms') return <AlgorithmTracker key={topicKey} topic={t} topicKey={topicKey}/>;
   return <div className="space-y-5"><Card><SectionTitle eyebrow="Watch the algorithm" title="Step-by-step execution" description="Change the sample input, generate the trace, then move through the recorded operations one at a time."/>
     {t.inp&&<div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/70"><label className="min-w-[200px] flex-1 text-xs font-semibold text-slate-600 dark:text-slate-300">Input values<input value={arr} onChange={e=>setArr(e.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900"/></label>{t.inp.target&&<label className="w-28 text-xs font-semibold text-slate-600 dark:text-slate-300">Target<input value={target} onChange={e=>setTarget(e.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900"/></label>}<button onClick={makeSteps} className="rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">Generate steps</button></div>}
     {!t.inp&&<div className="mb-5 flex flex-wrap items-center gap-3"><button onClick={()=>{const s=t.gen?.()||[];setSteps(s);setPos(0);setError(s.length?'':'No step trace available for this lesson.')}} className="rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white">Generate example</button><span className="text-xs text-slate-400">Uses the lesson’s built-in example values.</span></div>}
